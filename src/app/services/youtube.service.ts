@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient,HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { YoutubeResponse } from '../models/youtube.models';
 
 @Injectable({
   providedIn: 'root'
@@ -19,13 +20,25 @@ export class YoutubeService {
 
   }
 
-  getVideos(): Observable<any>{
+  getVideos(){
     const url = `${this.youtubeUrl}/playlistItems?`;
     const params =  new HttpParams()
-    .set('part','snippet')
-    .set('maxResults','10')
-    .set('playlistId',this.playList)
-    .set('key',this.apikey)
-    return this.http.get(url, {params});
+    .set('part', 'snippet')
+    .set('maxResults', '10')
+    .set('playlistId', this.playList)
+    .set('key', this.apikey)
+    .set('pageToken', this.nextPageToken);
+    return this.http.get<YoutubeResponse>(url, {params})
+    .pipe(
+      map(
+        data => {
+          this.nextPageToken = data.nextPageToken;
+          return data.items;
+        }
+      ),
+      map(
+        items => items.map(video => video.snippet)
+      )
+    );
   }
 }
